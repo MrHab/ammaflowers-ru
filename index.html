@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AMMA Flowers RUB</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-title">AMMA Flowers</div>
+      <div class="brand-sub">RUB price desk</div>
+    </div>
+    <div class="status-line" id="dataStatus">Загрузка прайса</div>
+  </header>
+
+  <main class="layout">
+    <section class="controls" aria-label="Параметры расчета">
+      <div class="control-group">
+        <label for="rateInput">Курс ¥ к ₽</label>
+        <div class="input-row">
+          <input id="rateInput" type="number" min="0" step="0.0001" inputmode="decimal">
+          <button class="icon-btn text-btn" id="refreshRateBtn" type="button">CBR</button>
+        </div>
+      </div>
+      <div class="control-group">
+        <label for="factorInput">Коэффициент цены</label>
+        <input id="factorInput" type="number" min="0" step="0.01" inputmode="decimal">
+      </div>
+      <div class="control-group">
+        <label for="deliveryInput">Доставка, ₽</label>
+        <input id="deliveryInput" type="number" min="0" step="100" inputmode="numeric">
+      </div>
+      <div class="control-group">
+        <label for="deliveryBoxesInput">Коробок в доставке</label>
+        <input id="deliveryBoxesInput" type="number" min="1" step="1" inputmode="numeric">
+      </div>
+      <div class="metric">
+        <span>Доставка за короб</span>
+        <strong id="deliveryPerBox">0 ₽</strong>
+      </div>
+    </section>
+
+    <section class="toolbar" aria-label="Фильтры">
+      <div class="catalog-tabs" aria-label="Раздел прайса">
+        <button class="catalog-tab active" type="button" data-catalog="cut">
+          <span>Срезанные цветы</span>
+          <strong id="cutCount">0</strong>
+        </button>
+        <button class="catalog-tab" type="button" data-catalog="supplies">
+          <span>Упаковка</span>
+          <strong id="suppliesCount">0</strong>
+        </button>
+      </div>
+      <div class="search-wrap">
+        <label for="searchInput">Поиск</label>
+        <input id="searchInput" type="search" placeholder="Название, категория, Китай">
+      </div>
+      <div class="select-wrap">
+        <label for="categorySelect">Категория</label>
+        <select id="categorySelect"></select>
+      </div>
+      <label class="toggle">
+        <input id="stockOnlyInput" type="checkbox" checked>
+        <span>В наличии</span>
+      </label>
+      <button class="text-btn" id="clearBtn" type="button">Сброс</button>
+      <button class="text-btn primary" id="exportBtn" type="button">CSV</button>
+    </section>
+
+    <section class="summary-grid" aria-label="Сводка">
+      <div class="summary-item">
+        <span>Показано</span>
+        <strong id="visibleCount">0</strong>
+      </div>
+      <div class="summary-item">
+        <span>В разделе</span>
+        <strong id="totalCount">0</strong>
+      </div>
+      <div class="summary-item">
+        <span id="minStemALabel">Мин. A за стебель</span>
+        <strong id="minStemA">-</strong>
+      </div>
+      <div class="summary-item">
+        <span id="minStemApLabel">Мин. A+ за стебель</span>
+        <strong id="minStemAp">-</strong>
+      </div>
+    </section>
+
+    <section class="table-shell" aria-label="Прайс">
+      <table>
+        <thead>
+          <tr>
+            <th class="photo-col">Фото</th>
+            <th class="name-col">Название</th>
+            <th>Упаковка</th>
+            <th>¥/кор A</th>
+            <th>₽/кор A</th>
+            <th id="unitHeaderA">₽/ст A</th>
+            <th>¥/кор A+</th>
+            <th>₽/кор A+</th>
+            <th id="unitHeaderAp">₽/ст A+</th>
+            <th>Корзина</th>
+          </tr>
+        </thead>
+        <tbody id="priceBody"></tbody>
+      </table>
+      <div class="empty-state" id="emptyState">Ничего не найдено</div>
+    </section>
+  </main>
+
+  <aside class="cart-panel" aria-label="Расчет заказа">
+    <div class="cart-head">
+      <div>
+        <h2>Расчет</h2>
+        <p id="cartMeta">0 коробок</p>
+      </div>
+      <button class="icon-btn" id="clearCartBtn" type="button" aria-label="Очистить расчет">×</button>
+    </div>
+    <div class="cart-list" id="cartList"></div>
+    <div class="cart-total">
+      <span>Итого с доставкой</span>
+      <strong id="cartTotal">0 ₽</strong>
+    </div>
+  </aside>
+
+  <script src="data/flowers.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
