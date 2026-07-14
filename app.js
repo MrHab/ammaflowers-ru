@@ -57,6 +57,7 @@
     refreshRate: document.getElementById("refreshRateBtn"),
     clear: document.getElementById("clearBtn"),
     export: document.getElementById("exportBtn"),
+    exportOrder: document.getElementById("exportOrderBtn"),
     cartList: document.getElementById("cartList"),
     cartMeta: document.getElementById("cartMeta"),
     cartTotal: document.getElementById("cartTotal"),
@@ -381,6 +382,11 @@
     `;
   }
 
+  function selectedBunchCny(flower, grade) {
+    const value = grade === "ap" ? flower.price_ap : flower.price_a;
+    return value == null || value === "" ? NaN : Number(value);
+  }
+
   function gramPackNote(flower) {
     const info = gramPackInfo(flower);
     if (!info) return "";
@@ -470,6 +476,7 @@
       el.cartList.innerHTML = `<div class="cart-empty">Добавьте позиции из прайса</div>`;
       el.cartMeta.textContent = "0 коробок";
       el.cartTotal.textContent = fmtRub(0);
+      if (el.exportOrder) el.exportOrder.disabled = true;
       return;
     }
 
@@ -502,6 +509,125 @@
 
     el.cartMeta.textContent = `${fmtNum(boxes)} коробок`;
     el.cartTotal.textContent = fmtRub(total, 0);
+    if (el.exportOrder) el.exportOrder.disabled = false;
+  }
+
+  function supplierLength(value) {
+    const text = cleanText(value);
+    if (!text) return "";
+    const match = text.match(/(\d+(?:[.,]\d+)?(?:\s*[-–]\s*\d+(?:[.,]\d+)?)?)\s*(?:см|cm|CM)\b/u);
+    return match ? `${match[1].replace(/\s+/g, "")}厘米 (cm)` : text;
+  }
+
+  function supplierBunchUnits(flower) {
+    const info = gramPackInfo(flower);
+    if (info) return `${fmtNum(info.grams)} грамм`;
+    const stems = Number(flower.stems);
+    if (Number.isFinite(stems) && stems > 0) return stems;
+    return isSupplyItem(flower) ? "1 шт" : "";
+  }
+
+  function excelCell(value, className = "") {
+    const cls = className ? ` class="${className}"` : "";
+    return `<td${cls}>${escapeHtml(value ?? "")}</td>`;
+  }
+
+  function supplierOrderRows() {
+    return [...state.cart.values()]
+      .map((row) => {
+        const flower = flowers.find((f) => String(f.id) === String(row.id));
+        if (!flower || row.qty <= 0) return null;
+        return { row, flower };
+      })
+      .filter(Boolean)
+      .sort((a, b) => flowerOrder(a.flower, b.flower) || a.row.grade.localeCompare(b.row.grade));
+  }
+
+  function exportOrderExcel() {
+    const rows = supplierOrderRows();
+    if (!rows.length) {
+      setStatus("Добавьте позиции в расчет перед экспортом Excel");
+      return;
+    }
+
+    const headers = [
+      ["Номер", "编号"],
+      ["Наименование на русском", "俄语名称"],
+      ["Наименование на английском", "英语名称"],
+      ["Наименование на китайском", "中文名称"],
+      ["Длина стебля", "花茎长度"],
+      ["Качество цветка", "花朵品质"],
+      ["Количество стеблей в одном банче", "每把枝数"],
+      ["Количество банчей в коробке", "每箱把数"],
+      ["Размер коробки", "箱体尺寸"],
+      ["Стоимость за 1 банч (Юани)", "每把单价"],
+      ["Заказ в коробках", "箱装订单"]
+    ];
+
+    const headerHtml = headers
+      .map(([ru, cn]) => `<th>${escapeHtml(ru)}<br><span>${escapeHtml(cn)}</span></th>`)
+      .join("");
+
+    const bodyHtml = rows.map(({ row, flower }, index) => {
+      const grade = row.grade === "ap" ? "A+" : "A";
+      const bunchPrice = selectedBunchCny(flower, row.grade);
+      return `<tr>
+        ${excelCell(index + 1, "num")}
+        ${excelCell(flower.ru || "", "text")}
+        ${excelCell(flower.en || "", "text")}
+        ${excelCell(flower.cn || "", "text")}
+        ${excelCell(supplierLength(flower.length), "text")}
+        ${excelCell(grade, "num")}
+        ${excelCell(supplierBunchUnits(flower), "num")}
+        ${excelCell(Number(flower.boxes_per_box) || "", "num")}
+        ${excelCell(flower.box_size || "", "text")}
+        ${excelCell(Number.isFinite(bunchPrice) ? bunchPrice : "Не требуется", "num")}
+        ${excelCell(row.qty, "num")}
+      </tr>`;
+    }).join("");
+
+    const html = `<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    table { border-collapse: collapse; font-family: Arial, sans-serif; font-size: 10pt; }
+    th, td { border: .5pt solid #000; padding: 5px 7px; vertical-align: middle; }
+    th { background: #fff; font-weight: 400; text-align: center; white-space: normal; }
+    th span { font-family: SimSun, "Microsoft YaHei", Arial, sans-serif; }
+    td.text { mso-number-format: "\\@"; }
+    td.num { text-align: center; }
+    col.c1 { width: 44px; }
+    col.c2 { width: 190px; }
+    col.c3 { width: 220px; }
+    col.c4 { width: 190px; }
+    col.c5 { width: 150px; }
+    col.c6 { width: 140px; }
+    col.c7 { width: 170px; }
+    col.c8 { width: 170px; }
+    col.c9 { width: 150px; }
+    col.c10 { width: 170px; }
+    col.c11 { width: 120px; }
+  </style>
+</head>
+<body>
+  <table>
+    <colgroup>${headers.map((_, index) => `<col class="c${index + 1}">`).join("")}</colgroup>
+    <thead><tr>${headerHtml}</tr></thead>
+    <tbody>${bodyHtml}</tbody>
+  </table>
+</body>
+</html>`;
+
+    const blob = new Blob(["\ufeff" + html], { type: "application/vnd.ms-excel;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    const date = new Date().toISOString().slice(0, 10);
+    link.href = url;
+    link.download = `ammaflowers-order-${date}.xls`;
+    link.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 0);
+    setStatus(`Excel заказа скачан · ${fmtNum(rows.length)} поз.`);
   }
 
   function exportCsv() {
@@ -618,6 +744,7 @@
 
     el.refreshRate.addEventListener("click", refreshRate);
     el.export.addEventListener("click", exportCsv);
+    if (el.exportOrder) el.exportOrder.addEventListener("click", exportOrderExcel);
 
     el.body.addEventListener("click", (event) => {
       const button = event.target.closest("[data-add]");

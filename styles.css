@@ -474,9 +474,33 @@ tr.category-row td {
   font-size: 12px;
 }
 
-.cart-head > div {
+.cart-head > div:first-child {
   flex: 1;
   min-width: 0;
+}
+
+.cart-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+  min-width: auto;
+}
+
+.cart-tools .text-btn {
+  height: 34px;
+  padding: 0 12px;
+}
+
+.cart-tools .icon-btn {
+  width: 34px;
+  height: 34px;
+  flex-basis: 34px;
+}
+
+.cart-tools button:disabled {
+  cursor: default;
+  opacity: .45;
 }
 
 .cart-list {
