@@ -1,5 +1,6 @@
 (function () {
   const dataset = window.AMMA_FLOWERS_DATA || { meta: {}, flowers: [] };
+  const thumbs = window.AMMA_FLOWER_THUMBS || {};
   const meta = dataset.meta || {};
   let flowers = Array.isArray(dataset.flowers) ? dataset.flowers : [];
   const storageKey = "amma-rub-settings";
@@ -347,9 +348,19 @@
     });
   }
 
+  function thumbFor(flower) {
+    const names = [flower.en, cleanText(flower.en), flower.ru, cleanText(flower.ru)]
+      .filter(Boolean);
+    for (const name of names) {
+      if (thumbs[name]) return thumbs[name];
+    }
+    return null;
+  }
+
   function photoHtml(flower) {
-    if (flower.photo_url) {
-      return `<img class="flower-photo" src="${escapeHtml(flower.photo_url)}" alt="${escapeHtml(flower.ru || flower.en || "flower")}" loading="lazy" onerror="this.replaceWith(photoFallback('${escapeHtml((flower.ru || flower.en || "?").slice(0, 1))}'))">`;
+    const photo = flower.photo_url || thumbFor(flower);
+    if (photo) {
+      return `<img class="flower-photo" src="${escapeHtml(photo)}" alt="${escapeHtml(flower.ru || flower.en || "flower")}" loading="lazy" onerror="this.replaceWith(photoFallback('${escapeHtml((flower.ru || flower.en || "?").slice(0, 1))}'))">`;
     }
     return `<div class="photo-fallback">${escapeHtml((flower.ru || flower.en || "?").slice(0, 1).toUpperCase())}</div>`;
   }
