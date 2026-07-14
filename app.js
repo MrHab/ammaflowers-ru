@@ -93,8 +93,14 @@
     return flower.catalog || "cut";
   }
 
+  function flowerOrder(a, b) {
+    return (Number(a.id) || 0) - (Number(b.id) || 0);
+  }
+
   function catalogFlowers(catalog = state.catalog) {
-    return flowers.filter((flower) => catalogOf(flower) === catalog);
+    return flowers
+      .filter((flower) => catalogOf(flower) === catalog)
+      .sort(flowerOrder);
   }
 
   function currentCatalogLabel() {
@@ -215,7 +221,7 @@
     for (let offset = 0; offset < 5000; offset += pageSize) {
       const params = new URLSearchParams({
         select: flowerSelect,
-        order: "cat_ru.asc,ru.asc",
+        order: "id.asc",
         offset: String(offset),
         limit: String(pageSize)
       });
@@ -321,8 +327,7 @@
   }
 
   function fillCategories() {
-    const categories = [...new Set(catalogFlowers().map((f) => f.cat_ru).filter(Boolean))]
-      .sort((a, b) => a.localeCompare(b, "ru"));
+    const categories = [...new Set(catalogFlowers().map((f) => f.cat_ru).filter(Boolean))];
     el.category.innerHTML = `<option value="">Все категории</option>${categories
       .map((cat) => `<option value="${escapeHtml(cat)}">${escapeHtml(cat)}</option>`)
       .join("")}`;
