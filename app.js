@@ -382,11 +382,6 @@
     `;
   }
 
-  function selectedBunchCny(flower, grade) {
-    const value = grade === "ap" ? flower.price_ap : flower.price_a;
-    return value == null || value === "" ? NaN : Number(value);
-  }
-
   function gramPackNote(flower) {
     const info = gramPackInfo(flower);
     if (!info) return "";
@@ -519,14 +514,6 @@
     return match ? `${match[1].replace(/\s+/g, "")}厘米 (cm)` : text;
   }
 
-  function supplierBunchUnits(flower) {
-    const info = gramPackInfo(flower);
-    if (info) return `${fmtNum(info.grams)} грамм`;
-    const stems = Number(flower.stems);
-    if (Number.isFinite(stems) && stems > 0) return stems;
-    return isSupplyItem(flower) ? "1 шт" : "";
-  }
-
   function excelCell(value, className = "") {
     const cls = className ? ` class="${className}"` : "";
     return `<td${cls}>${escapeHtml(value ?? "")}</td>`;
@@ -557,10 +544,6 @@
       ["Наименование на китайском", "中文名称"],
       ["Длина стебля", "花茎长度"],
       ["Качество цветка", "花朵品质"],
-      ["Количество стеблей в одном банче", "每把枝数"],
-      ["Количество банчей в коробке", "每箱把数"],
-      ["Размер коробки", "箱体尺寸"],
-      ["Стоимость за 1 банч (Юани)", "每把单价"],
       ["Заказ в коробках", "箱装订单"]
     ];
 
@@ -570,7 +553,6 @@
 
     const bodyHtml = rows.map(({ row, flower }, index) => {
       const grade = row.grade === "ap" ? "A+" : "A";
-      const bunchPrice = selectedBunchCny(flower, row.grade);
       return `<tr>
         ${excelCell(index + 1, "num")}
         ${excelCell(flower.ru || "", "text")}
@@ -578,10 +560,6 @@
         ${excelCell(flower.cn || "", "text")}
         ${excelCell(supplierLength(flower.length), "text")}
         ${excelCell(grade, "num")}
-        ${excelCell(supplierBunchUnits(flower), "num")}
-        ${excelCell(Number(flower.boxes_per_box) || "", "num")}
-        ${excelCell(flower.box_size || "", "text")}
-        ${excelCell(Number.isFinite(bunchPrice) ? bunchPrice : "Не требуется", "num")}
         ${excelCell(row.qty, "num")}
       </tr>`;
     }).join("");
@@ -603,11 +581,7 @@
     col.c4 { width: 190px; }
     col.c5 { width: 150px; }
     col.c6 { width: 140px; }
-    col.c7 { width: 170px; }
-    col.c8 { width: 170px; }
-    col.c9 { width: 150px; }
-    col.c10 { width: 170px; }
-    col.c11 { width: 120px; }
+    col.c7 { width: 120px; }
   </style>
 </head>
 <body>
