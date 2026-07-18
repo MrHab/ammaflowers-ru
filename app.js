@@ -131,12 +131,32 @@
     return match ? Number(match[1].replace(",", ".")) : null;
   }
 
+  function packagingOverride(flower) {
+    const category = cleanText(flower.cat_en).toLowerCase();
+    const englishName = cleanText(flower.en).toLowerCase();
+
+    if (category === "single rose") {
+      return { bunchesPerBox: 8, stemsPerBunch: 20, label: "20 ст/банч · 8 банч/кор" };
+    }
+    if (category === "spray rose") {
+      return { bunchesPerBox: 12, stemsPerBunch: 10, label: "10 ст/банч · 12 банч/кор" };
+    }
+    if (category === "hydrangea") {
+      return { bunchesPerBox: 24, stemsPerBunch: 1, label: "24 ст/кор" };
+    }
+    if (englishName === "gypsophila white") {
+      return { bunchesPerBox: 12, gramsPerBunch: 1000, label: "1000 г/банч · 12 банч/кор" };
+    }
+    return null;
+  }
+
   function isSupplyItem(flower) {
     return /supplies/i.test([flower.catalog, flower.cat_en, flower.cat_ru].filter(Boolean).join(" "));
   }
 
   function gramPackInfo(flower) {
-    const grams = gramsPerPack(flower);
+    const override = packagingOverride(flower);
+    const grams = override?.gramsPerBunch || gramsPerPack(flower);
     if (!grams || isSupplyItem(flower)) return null;
     const stemsPerBunch = defaultGramPackStems;
     return {
@@ -160,15 +180,22 @@
 
   function priceFor(flower, grade) {
     const bunchCny = Number(grade === "ap" ? flower.price_ap : flower.price_a) || 0;
-    const bunchesPerBox = Number(flower.boxes_per_box) || 0;
+    const override = packagingOverride(flower);
+    const bunchesPerBox = override?.bunchesPerBox || Number(flower.boxes_per_box) || 0;
     const gramInfo = gramPackInfo(flower);
-    const unitsPerBunch = gramInfo ? gramInfo.stemsPerBunch : Number(flower.stems) || 0;
+    const unitsPerBunch = gramInfo
+      ? gramInfo.stemsPerBunch
+      : override?.stemsPerBunch || Number(flower.stems) || 0;
     const unitsPerBox = bunchesPerBox * unitsPerBunch;
     const boxCny = bunchCny * bunchesPerBox * state.factor;
     const boxRubNoDelivery = boxCny * state.rate;
     const boxRub = boxRubNoDelivery + deliveryPerBox();
     const unitRub = unitsPerBox > 0 ? boxRub / unitsPerBox : NaN;
     return { bunchCny, bunchesPerBox, unitsPerBunch, unitsPerBox, boxCny, boxRubNoDelivery, boxRub, unitRub, gramInfo };
+  }
+
+  function packLabel(flower) {
+    return packagingOverride(flower)?.label || flower.pack || "-";
   }
 
   function cleanText(value) {
@@ -417,7 +444,7 @@
             <span>${flower.in_stock ? "В наличии" : "Нет в наличии"} · ID ${flower.id}</span>
           </td>
           <td class="pack-cell">
-            ${escapeHtml(flower.pack || "-")}
+            ${escapeHtml(packLabel(flower))}
             ${gramPackNote(flower)}
             <br>${escapeHtml([flower.length, flower.flower_weight, flower.box_size].filter(Boolean).join(" · "))}
           </td>
@@ -617,10 +644,10 @@
       const a = priceFor(f, "a");
       const ap = priceFor(f, "ap");
       return [
-        f.id, f.ru, f.cn, f.cat_ru, f.in_stock ? "yes" : "no", f.pack,
+        f.id, f.ru, f.cn, f.cat_ru, f.in_stock ? "yes" : "no", packLabel(f),
         a.boxCny, a.boxRub, a.unitRub,
         ap.boxCny, ap.boxRub, ap.unitRub,
-        f.boxes_per_box, a.gramInfo?.grams || "", a.gramInfo?.stemsPerKg || "", a.unitsPerBunch, a.unitsPerBox, f.box_size
+        a.bunchesPerBox, a.gramInfo?.grams || "", a.gramInfo?.stemsPerKg || "", a.unitsPerBunch, a.unitsPerBox, f.box_size
       ];
     })).map((line) => line.map((value) => {
       const text = value == null || Number.isNaN(value) ? "" : String(value);
