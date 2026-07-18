@@ -75,6 +75,10 @@ select {
   text-align: right;
 }
 
+.status-line.stale {
+  color: #f3c888;
+}
+
 .layout {
   max-width: 1520px;
   margin: 0 auto;

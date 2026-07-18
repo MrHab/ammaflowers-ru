@@ -350,7 +350,7 @@
       render();
 
       const time = new Date().toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
-      setStatus(`Прайс AMMA обновлен в ${time}`);
+      setStatus(`Проверено в ${time}`);
     } catch (error) {
       console.warn(error);
       const prefix = silent
@@ -693,14 +693,20 @@
   }
 
   function setStatus(prefix) {
-    const latest = meta.latest_updated ? new Date(meta.latest_updated).toLocaleString("ru-RU", {
+    const latestDate = meta.latest_updated ? new Date(meta.latest_updated) : null;
+    const latest = latestDate ? latestDate.toLocaleString("ru-RU", {
       day: "2-digit",
       month: "2-digit",
       year: "numeric",
       hour: "2-digit",
       minute: "2-digit"
     }) : "-";
-    el.status.textContent = `${prefix} · ${fmtNum(flowers.length)} поз. · прайс ${latest}`;
+    const ageHours = latestDate && Number.isFinite(latestDate.getTime())
+      ? Math.max(0, Math.floor((Date.now() - latestDate.getTime()) / (60 * 60 * 1000)))
+      : 0;
+    const stale = ageHours >= 24 ? ` · нет новых данных ${ageHours} ч.` : "";
+    el.status.classList.toggle("stale", ageHours >= 24);
+    el.status.textContent = `${prefix} · ${fmtNum(flowers.length)} поз. · данные AMMA от ${latest}${stale}`;
   }
 
   function bindEvents() {
