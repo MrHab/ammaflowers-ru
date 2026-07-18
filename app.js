@@ -131,6 +131,20 @@
     return match ? Number(match[1].replace(",", ".")) : null;
   }
 
+  function stemsPerBunchFromPack(flower) {
+    const pack = String(flower.pack || "");
+    const patterns = [
+      /(\d+(?:[.,]\d+)?)\s*(?:шт\.?|штук)\s*\/\s*(?:вяз|банч)/i,
+      /(\d+(?:[.,]\d+)?)\s*枝\s*\/\s*扎/i,
+      /(\d+(?:[.,]\d+)?)\s*(?:pc|pcs)\s*\/\s*(?:bun|bunch)/i
+    ];
+    for (const pattern of patterns) {
+      const match = pack.match(pattern);
+      if (match) return Number(match[1].replace(",", "."));
+    }
+    return null;
+  }
+
   function packagingOverride(flower) {
     const category = cleanText(flower.cat_en).toLowerCase();
     const englishName = cleanText(flower.en).toLowerCase();
@@ -166,16 +180,9 @@
     };
   }
 
-  function isWeightItem(flower) {
-    if (gramPackInfo(flower)) return false;
-    if (flower.is_weight === true) return true;
-    const text = [flower.cat_ru, flower.cat_en, flower.pack, flower.flower_weight].filter(Boolean).join(" ");
-    return /кг|килограмм|грамм|гр|克|公斤|kg|g/i.test(text) && /зелень|листья|greenery|foliage|leaves|leaf|叶材/i.test(text);
-  }
-
   function unitLabel(flower) {
     if (isSupplyItem(flower)) return "шт";
-    return isWeightItem(flower) ? "г" : "ст";
+    return "ст";
   }
 
   function priceFor(flower, grade) {
@@ -185,7 +192,7 @@
     const gramInfo = gramPackInfo(flower);
     const unitsPerBunch = gramInfo
       ? gramInfo.stemsPerBunch
-      : override?.stemsPerBunch || Number(flower.stems) || 0;
+      : override?.stemsPerBunch || stemsPerBunchFromPack(flower) || Number(flower.stems) || 0;
     const unitsPerBox = bunchesPerBox * unitsPerBunch;
     const boxCny = bunchCny * bunchesPerBox * state.factor;
     const boxRubNoDelivery = boxCny * state.rate;
@@ -426,8 +433,8 @@
     for (const flower of rows) {
       const a = priceFor(flower, "a");
       const ap = priceFor(flower, "ap");
-      if (!isWeightItem(flower) && Number.isFinite(a.unitRub)) minA = Math.min(minA, a.unitRub);
-      if (!isWeightItem(flower) && Number.isFinite(ap.unitRub)) minAp = Math.min(minAp, ap.unitRub);
+      if (Number.isFinite(a.unitRub)) minA = Math.min(minA, a.unitRub);
+      if (Number.isFinite(ap.unitRub)) minAp = Math.min(minAp, ap.unitRub);
 
       if (flower.cat_ru !== lastCat) {
         lastCat = flower.cat_ru || "Без категории";
